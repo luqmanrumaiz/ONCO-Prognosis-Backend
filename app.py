@@ -2,6 +2,7 @@
 from flask import Flask
 from flask_cors import CORS
 from flask_restful import Api, Resource, reqparse
+from Models.skin_cancer.mrat_rest import MelanomaRiskAssessmentTool
 import joblib
 import numpy as np
 
@@ -16,7 +17,7 @@ API = Api(app)
 
 BREAST_PROGNOSIS_MODEL = joblib.load('Models/breast-cancer-prognosis-model.pkl')
 LUNG_PROGNOSIS_MODEL = joblib.load('Models/lung-cancer-pred-model.pkl')
-
+SKIN_PROGNOSIS_MODEL = MelanomaRiskAssessmentTool()
 
 # ### Creating a class which is responsible for the prognosis of Lung Cancer
 
@@ -103,10 +104,37 @@ class BreastCancerPrognosis(Resource):
         return out, 200  # returns 200 Status Code if successful with the Output
 
 
+# ### Creating a class which is responsible for the prognosis of Breast Cancer
+
+class SkinCancerPrognosis(Resource):
+
+    @staticmethod
+    def post():
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('age')
+        parser.add_argument('gender')
+        parser.add_argument('sunburn')
+        parser.add_argument('complexion')
+        parser.add_argument('big-moles')
+        parser.add_argument('small-moles')
+        parser.add_argument('freckling')
+        parser.add_argument('damage')
+        parser.add_argument('tan')
+
+        args = parser.parse_args()
+        out = SKIN_PROGNOSIS_MODEL.getAbsoluteRisk(args)
+
+        print(out)
+
+        return out, 200  # returns 200 Status Code if successful with the Output
+
+
 # ### Adding the predict class as a resource to the API
 API.add_resource(BreastCancerPrognosis, '/prognosis_breast')
 API.add_resource(LungCancerPrognosis, '/prognosis_lung')
+API.add_resource(SkinCancerPrognosis, '/prognosis_skin')
 
 # Running the Main Application
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80)
+    app.run(debug=False)
